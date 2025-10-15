@@ -12,12 +12,12 @@ static cf32* lo_n;
 
 
 void init_rf(void) {
-    sample_out_buf = calloc(config.sample_count * config.rx_array.channel_count, sizeof(cf32));
+    sample_out_buf = calloc(config.sample_count * config.rx_array->channel_count, sizeof(cf32));
 
     sample_ref_buf = calloc(config.sample_count, sizeof(cf32));
     noise_buffer = calloc(config.sample_count, sizeof(cf32));
 
-    sample_obs_buf = calloc(config.sample_count * config.rx_array.observe_count, sizeof(cf32));
+    sample_obs_buf = calloc(config.sample_count * config.rx_array->observe_count, sizeof(cf32));
 
 
     if(config.tx_source_file != NULL) {
@@ -136,7 +136,7 @@ cf32* __get_reference(void) {
 }
 
 void __clean_output(void) {
-    memset(sample_out_buf, 0x00, sizeof(cf32)*config.rx_array.channel_count*config.sample_count);
+    memset(sample_out_buf, 0x00, sizeof(cf32)*config.rx_array->channel_count*config.sample_count);
 }
 
 cf32* __get_channel(int i) {

@@ -54,6 +54,21 @@ Other than that you may need libbsd for the *oh-so-obscure* strlcpy() function o
 Simply run: `bash build.sh`
 The output binary will be compiled to `passim.out`.
 
+## Dynamic antenna extension
+Upon request I backported the capability to extend the simulator with custom antenna systems. This change is not tested as of now, just copied back from the internal protected repository.
+
+To add a new antenna geometry, implement a new array steering vector (and blindspots) under `array/YOUR_NAME/impl.c`.
+
+Then change the build script to build your antenna library too:
+```
+build_array YOUR_NAME
+```
+
+And to use it as an antenna:
+```
+$ ./passim.out ... -a YOUR_NAME.so
+```
+
 ## License & version
 This is a lite version of the generator code, with inbuilt antenna array definition and no coupling matrix.
 

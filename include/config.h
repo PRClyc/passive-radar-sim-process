@@ -22,7 +22,7 @@ struct config {
     char*           tx_source_file;
 
     struct GPSPOS   rx_location;
-    struct array    rx_array;
+    struct array*   rx_array;
 
     double          center_freq;
     double          sample_rate;

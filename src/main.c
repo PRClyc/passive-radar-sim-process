@@ -14,6 +14,11 @@ int main(int argc, char *argv[]) {
 
     print_config(&config);
 
+    if(config.rx_array == NULL) {
+        fprintf(stderr, "ERR: cannot use antenna definition library\n");
+        exit(-1);
+    }
+
     simulate();
 
     return 0;
@@ -116,7 +121,7 @@ void simulate() {
         // count generated targets for normalization
 
         // create observation channels
-        for(int ch=0; ch<config.rx_array.channel_count; ch++) {
+        for(int ch=0; ch<config.rx_array->channel_count; ch++) {
             // reference and noise to each observation channel
             if(ch != 0) addch_addnoise(__get_channel(ch), __get_reference(), -50.0, -90.0);
 
@@ -129,10 +134,10 @@ void simulate() {
             }
         }
 
-        //dump_file("all.cf32", __get_channel(0), config.sample_count * config.rx_array.channel_count);
+        //dump_file("all.cf32", __get_channel(0), config.sample_count * config.rx_array->channel_count);
 
         if(output != NULL) {
-            fwrite(__get_channel(0), config.sample_count * config.rx_array.channel_count, sizeof(cf32), output);
+            fwrite(__get_channel(0), config.sample_count * config.rx_array->channel_count, sizeof(cf32), output);
             fflush(output);
         }
 

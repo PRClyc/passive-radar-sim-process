@@ -65,7 +65,7 @@ int solve_path(struct path* path) {
     path->azimuth = atan2(target.e, target.n);
     if(path->azimuth < 0) path->azimuth += 2.0*M_PI; // convert to heading
 
-    if(array_blindspot(path->azimuth)) {
+    if(config.rx_array->blindspot(config.rx_array, path->azimuth)) {
         return 2;
     }
 
@@ -76,9 +76,9 @@ int solve_path(struct path* path) {
     double p_ref = 80.0 + 10*log10((lambda*lambda)/( (PI4)*(PI4)*config.main_axel*config.main_axel  ));
     double p_obs = 80.0 + 10*log10(path->rcs * (lambda*lambda)/( (PI4)*(PI4)*(PI4)*path->rx_dist*path->rx_dist*path->tx_dist*path->tx_dist ));
 
-    double sn = p_obs - p_ref + config.rx_array.frontend_gain;
+    double sn = p_obs - p_ref + config.rx_array->frontend_gain;
 
-    printf("\tFYI Pref=%.2f dBm, Pobs=%.2f dBm Prf=%.2f dB -> attenuation = %.1f\n", p_ref, p_obs, config.rx_array.frontend_gain, sn);
+    printf("\tFYI Pref=%.2f dBm, Pobs=%.2f dBm Prf=%.2f dB -> attenuation = %.1f\n", p_ref, p_obs, config.rx_array->frontend_gain, sn);
 
     path->attenuation = pow(10.0, sn / 10.0);
 
@@ -103,7 +103,7 @@ void render_path(struct path* path) {
 
     //dump_file("delay_attenuate.cf32", path->observation, config.sample_count);
 
-    path->steering = array_steering(path->azimuth, path->elevation);
+    path->steering = config.rx_array->steering(config.rx_array, path->azimuth, path->elevation);
 
     clock_t end = clock();
 
