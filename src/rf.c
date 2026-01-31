@@ -122,7 +122,16 @@ void addch_addnoise(cf32* restrict target, cf32* restrict ref, double ref_att_db
         target[i] += noise;
     }
 }
+void add_noise_only(cf32* restrict target, double noise_att_db) {
+    double noise_att_rel = pow(10.0, noise_att_db / 20.0);
 
+    #pragma acc parallel loop
+    for (int i = 0; i < config.sample_count; i++) {
+        if (noise_att_db > -120.0) {
+            target[i] += noise_buffer[i] * noise_att_rel;
+        }
+    }
+}
 void addch_saaxpy(cf32* restrict acc, cf32 a, cf32 aa, const cf32* restrict source) {
     #pragma acc parallel loop
     for (int i = 0; i < config.sample_count; ++i) {

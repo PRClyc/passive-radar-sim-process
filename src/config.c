@@ -1,5 +1,5 @@
 #include "config.h"
-
+#include <math.h>
 #include <libgen.h>
 
 #include <dlfcn.h>
@@ -29,7 +29,8 @@ static struct argp_option options[] = {
     {"rx-location",     'r', "STR",     0, "Location of RX in GPS coordinates (lat,lon,alt)", 12},
     {"rx-array",        'a', "FILE",    0, "REQUIRED! Receiver antenna array definition library.", 15},
 
-
+    {"truth-data",      'q', "FILE", 0, "Output CSV file for truth/geometry per frame.", 21},
+    {"direct-path-mode", 'x', "INT", 0, "Direct path interference mode: 0=none, 1=fixed, 2=steered (default).", 22},
     {"target-file",     'f', "FILE,FLOAT",  0, "File of KML target paths (multiple, excludes target coordinate option). RCS should be defined after comma.", 16},
     {"target-coord",    'c', "FLOATS",   0, "Coordinates of targets (multiple, excludes target files option). lat,lon,alt,speed,heading,rcs.", 17},
     {0}
@@ -47,7 +48,7 @@ struct argp argp = {
 void init_config(int argc, char** argv) {
     config.tx_location = (struct GPSPOS){47.491691, 18.979128, 300}; // Széchenyi-hegy
     config.tx_source_file = NULL;
-
+    config.truth_file = NULL;
     config.rx_location = (struct GPSPOS){47.416431, 19.304206, 151}; // Ferihegy
     /*config.rx_array = (struct array){
         .geom           = ULA,
@@ -58,7 +59,7 @@ void init_config(int argc, char** argv) {
         .frontend_gain  = 20
     };*/
     config.rx_array = NULL;
-
+    config.direct_path_mode = DP_MODE_STEERED; 
     config.sample_rate      = 8333333.0;
     config.sample_count     = 1048576;
     config.center_freq      = 610e6;
@@ -107,7 +108,30 @@ void prepare_config(struct config* config) {
     }
 
     config->main_axel = distance(config->tx_location, config->rx_location);
+    if (config->rx_array != NULL) {
+        struct ENU tx_from_rx;
+        // origin = RX, point = TX
+        lla_to_enu(&config->tx_location, &config->rx_location, &tx_from_rx);
 
+        double r = magnitudeENU(&tx_from_rx);
+
+        // azimuth：az = atan2(E, N)，[0, 2π)
+        config->tx_azimuth = atan2(tx_from_rx.e, tx_from_rx.n);
+        if (config->tx_azimuth < 0.0)
+            config->tx_azimuth += 2.0 * M_PI;
+
+        // elevation：el = asin(U / |r|)
+        config->tx_elevation = asin(tx_from_rx.u / r);
+
+        config->tx_steering =
+            config->rx_array->steering(config->rx_array,
+                                        config->tx_azimuth,
+                                        config->tx_elevation);
+    } else {
+        config->tx_azimuth   = 0.0;
+        config->tx_elevation = 0.0;
+        config->tx_steering  = NULL;
+    }
 }
 
 void print_config(struct config* config) {
@@ -123,18 +147,16 @@ void print_config(struct config* config) {
     printf("\tcenter_freq:     %.0f\n", config->center_freq);
     printf("\tinteractive:     %d\n", config->interactive);
     printf("\toutput_file:     %s\n", config->output_file);
-
     printf("\tmax_distance:    %.0f m\n", config->max_distance);
     printf("\tmin_altitude:    %.0f m\n", config->min_altitude);
-
     char _start[20];
     char _end[20];
     strftime(_start, 20, "%Y-%m-%d %H:%M:%S", localtime(&(config->start_time)));
     strftime(_end, 20, "%Y-%m-%d %H:%M:%S", localtime(&(config->end_time)));
-
+    printf("\tdirect_path_mode: %d (0=none,1=fixed,2=steered)\n", config->direct_path_mode);
     printf("\tstart_time:      %s\n", _start);
     printf("\tend_time:        %s\n", _end);
-    printf("\tstep:            %d sec\n", config->step);
+    printf("\tstep: %ld sec\n", config->step);
     printf("TARGETS\n");
     printf("\tcount:    %d\n", config->target_len);
     for(int i=0; i<config->target_len; i++) {
@@ -303,6 +325,16 @@ error_t parse_opt(int key, char *arg, struct argp_state *state) {
         case 'p':
             config->output_timestamp = strdup(arg);
             break;
+        case 'q':
+            config->truth_file = strdup(arg);
+            break;
+
+        case 'x':
+            config->direct_path_mode = atoi(arg);
+            if (config->direct_path_mode < 0 || config->direct_path_mode > 2) {
+            argp_failure(state, 1, 0, "Direct path mode must be 0 (none), 1 (fixed), or 2 (steered).");
+            }
+            break;    
         case 'u':
             config->dump_trackpoints = strdup(arg);
             printf("opened path %s\n", config->dump_trackpoints);

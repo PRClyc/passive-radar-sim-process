@@ -31,6 +31,8 @@ Program to simulate passive radar observation signals.
                              after comma.
   -c, --target-coord=FLOATS  Coordinates of targets (multiple, excludes target
                              files option). lat,lon,alt,speed,heading,rcs.
+  -q, --truth-data=FILE      Output CSV file for truth/geometry per frame.
+  -x, --direct-path-mode=INT Direct path interference mode: 0=none, 1=fixed, 2=steered (default).
   -?, --help                 Give this help list
       --usage                Give a short usage message
 
@@ -68,6 +70,26 @@ And to use it as an antenna:
 ```
 $ ./passim.out ... -a YOUR_NAME.so
 ```
+
+### Custom Parameter Configuration
+Parameter selection and customization have been fully implemented in the `build_run.sh` script to streamline the simulation workflow. 
+Note that the following parameters **must be configured with personalized values** before running the simulator:
+- Target trajectory file (KML format)
+- Flight time window (start/end timestamp for simulation)
+- GPS coordinates (latitude/longitude/altitude) of transmitter (TX) and receiver (RX)
+- Output file paths for IQ data and auxiliary logs (truth data, timing information)
+
+Incorrect or default values for these parameters will lead to invalid simulation results and failure in downstream signal processing pipelines.
+
+## Extended Features & Customization
+This implementation is built upon the passim program originally developed by Benedek Tomka, with the following key enhancements and additional functionalities:
+
+Core functionality extension: Realized the generation of IQ data based on KML trajectory files, which serves as the foundation for passive radar signal simulation.
+KML file generation pipeline: Provided a dedicated solution for generating KML files using ADS-B data collected via the dump1090 project, with this functionality fully implemented in `adsb_to_kml_exact.py`.
+Passive radar signal processing: Implemented a complete set of passive radar signal processing workflows for the generated IQ data, including (but not limited to) Cross-Ambiguity Function (CAF) calculation, Direction of Arrival (DOA) estimation, and trajectory inversion. These capabilities are encapsulated in the scripts named `code1.py` to `code7.py`.
+Original project improvements:
+  - Corrected the incident angle handling logic by implementing explicit conversion between ENU coordinate system and UCA polar coordinate system ;
+  - Introduced the `-x` (--direct-path-mode) parameter to configure the working mode of direct-path interference (0=none, 1=fixed, 2=steered by default).
 
 ## License & version
 This is a lite version of the generator code, with inbuilt antenna array definition and no coupling matrix.

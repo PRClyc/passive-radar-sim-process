@@ -16,6 +16,11 @@
 #include "array.h"
 
 extern struct config config;
+enum {
+    DP_MODE_NONE = 0,      // No direct path
+    DP_MODE_FIXED = 1,     // Fixed amplitude direct path
+    DP_MODE_STEERED = 2    // Direct path with steering vector consideration
+};
 
 struct config {
     struct GPSPOS   tx_location;
@@ -23,13 +28,18 @@ struct config {
 
     struct GPSPOS   rx_location;
     struct array*   rx_array;
-
+    
+    // New: Incident angle of TX relative to RX (global constant)
+    double          tx_azimuth;      // [rad] Azimuth angle of TX as seen from RX
+    double          tx_elevation;    // [rad] Elevation angle of TX as seen from RX
+    cf32*           tx_steering;     // Steering vector of RX array towards TX direction
+    
     double          center_freq;
     double          sample_rate;
     int             sample_count;
     int             interactive;
     int             verbosity;
-
+    int             direct_path_mode;
     char*           dump_trackpoints;
 
     double          max_distance;
@@ -38,6 +48,7 @@ struct config {
 
     char*           output_file;
     char*           output_timestamp;
+    char*           truth_file;   // Path for ground truth CSV output (optional)
 
     time_t          start_time;
     time_t          end_time;
@@ -59,5 +70,5 @@ void print_config(struct config* config);
 extern struct argp argp;
 error_t parse_opt(int key, char *arg, struct argp_state *state);
 
-
 #endif
+

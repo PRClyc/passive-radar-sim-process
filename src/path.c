@@ -30,7 +30,7 @@ int solve_path(struct path* path) {
     speed.n = sin(M_PI/2.0 - deg2rad(path->target->heading)) * path->target->speed;
     speed.u = 0;
 
-    double T = 10.0;
+    double T = (config.step > 0) ? config.step : 1.0;
 
     struct ENU s = axpyENU(T, &speed, &target);
 
@@ -91,7 +91,7 @@ void render_path(struct path* path) {
     if(path->observation == NULL)
         path->observation = calloc(config.sample_count, sizeof(cf32));
 
-    dump_file("ref.cf32", __get_reference(), config.sample_count);
+    //dump_file("ref.cf32", __get_reference(), config.sample_count);
 
     //cnco(path->doppler, __get_reference(), path->observation);
     cnco(path->doppler, __get_reference(), path->observation);
